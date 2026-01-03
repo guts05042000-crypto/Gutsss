@@ -1,9 +1,30 @@
 
-import { GoogleGenAI, Type } from "@google/genai";
-
-// --- Constants & Config ---
-const API_KEY = process.env.API_KEY;
+// --- Constants ---
 const ANNIVERSARY_DATE = "May 4th";
+
+// A collection of romantic messages to cycle through locally (No API needed)
+const LOVE_NOTES = [
+  {
+    header: "My Whole World",
+    message: "Thank you for being my anchor in every storm and my sunshine on every gray day. I love you more than words can say.",
+    signature: "Always Yours"
+  },
+  {
+    header: "A Beautiful Journey",
+    message: "Looking back at our time together, I'm amazed by how much love we've shared. I can't wait for our forever.",
+    signature: "With All My Love"
+  },
+  {
+    header: "My Soulmate",
+    message: "Every moment spent with you is like a beautiful dream come true. You are my greatest blessing.",
+    signature: "Forever & Always"
+  },
+  {
+    header: "To My Love",
+    message: "You make my life so much brighter just by being in it. Happy anniversary to the person who has my heart.",
+    signature: "Your One and Only"
+  }
+];
 
 // --- DOM Elements ---
 const pageWelcome = document.getElementById('page-welcome')!;
@@ -16,14 +37,15 @@ const btnRefreshNote = document.getElementById('btn-refresh-note')!;
 
 const img1 = document.getElementById('img-slot-1') as HTMLImageElement;
 const img2 = document.getElementById('img-slot-2') as HTMLImageElement;
+const img3 = document.getElementById('img-slot-3') as HTMLImageElement;
+
 const inputImg1 = document.getElementById('input-img-1') as HTMLInputElement;
 const inputImg2 = document.getElementById('input-img-2') as HTMLInputElement;
+const inputImg3 = document.getElementById('input-img-3') as HTMLInputElement;
 
 const noteHeader = document.getElementById('note-header')!;
 const noteBody = document.getElementById('note-body')!;
 const noteSig = document.getElementById('note-sig')!;
-const feelingsLoader = document.getElementById('feelings-loader')!;
-const feelingsContent = document.getElementById('feelings-content')!;
 
 const canvas = document.getElementById('sparkleCanvas') as HTMLCanvasElement;
 const ctx = canvas.getContext('2d')!;
@@ -32,8 +54,9 @@ const ctx = canvas.getContext('2d')!;
 let isSparkling = false;
 let particles: any[] = [];
 let editing = false;
+let currentNoteIndex = 0;
 
-// --- Sparkle Engine ---
+// --- Sparkle Engine (Pure Canvas) ---
 function initCanvas() {
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
@@ -79,7 +102,6 @@ function updateSparkles() {
     ctx.globalAlpha = Math.max(0, p.opacity);
     ctx.fillStyle = p.color;
     
-    // Draw heart-ish star
     ctx.beginPath();
     for (let j = 0; j < 5; j++) {
       ctx.lineTo(0, p.size);
@@ -100,76 +122,54 @@ function updateSparkles() {
 btnSparkle.addEventListener('click', () => {
   isSparkling = true;
   updateSparkles();
-  setTimeout(() => { isSparkling = false; }, 5000);
+  setTimeout(() => { isSparkling = false; }, 8000);
 });
 
-// --- Page Navigation ---
+// --- Navigation ---
 btnEnter.addEventListener('click', () => {
   pageWelcome.classList.replace('active', 'hidden');
   pageMemories.classList.replace('hidden', 'active');
-  fetchLoveNote();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 });
 
 btnBack.addEventListener('click', () => {
   pageMemories.classList.replace('active', 'hidden');
   pageWelcome.classList.replace('hidden', 'active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 });
 
-// --- Editable Photos Logic ---
+// --- Photo Editing Logic ---
 btnEdit.addEventListener('click', () => {
   editing = !editing;
   btnEdit.textContent = editing ? '✓ Done' : '✎ Edit Photos';
   inputImg1.classList.toggle('hidden', !editing);
   inputImg2.classList.toggle('hidden', !editing);
+  inputImg3.classList.toggle('hidden', !editing);
 });
 
-inputImg1.addEventListener('input', (e) => {
-  const url = (e.target as HTMLInputElement).value;
-  if (url) img1.src = url;
-});
-
-inputImg2.addEventListener('input', (e) => {
-  const url = (e.target as HTMLInputElement).value;
-  if (url) img2.src = url;
-});
-
-// --- AI Love Note Integration ---
-async function fetchLoveNote() {
-  feelingsLoader.classList.remove('hidden');
-  feelingsContent.classList.add('hidden');
-  
-  try {
-    const ai = new GoogleGenAI({ apiKey: API_KEY! });
-    const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
-      contents: "Write a short, heart-touching anniversary message for a partner. No names, just deep romance. 2 sentences max.",
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            header: { type: Type.STRING },
-            message: { type: Type.STRING },
-            signature: { type: Type.STRING }
-          },
-          required: ["header", "message", "signature"]
-        }
-      }
-    });
-
-    const data = JSON.parse(response.text.trim());
-    noteHeader.textContent = data.header;
-    noteBody.textContent = `"${data.message}"`;
-    noteSig.textContent = data.signature;
-  } catch (err) {
-    console.error(err);
-    noteHeader.textContent = "My Soulmate";
-    noteBody.textContent = "Every moment with you is a treasure I cherish. Thank you for being my light and my love.";
-    noteSig.textContent = "Forever Yours";
-  } finally {
-    feelingsLoader.classList.add('hidden');
-    feelingsContent.classList.remove('hidden');
-  }
+function handleImageChange(input: HTMLInputElement, img: HTMLImageElement) {
+  input.addEventListener('input', (e) => {
+    const val = (e.target as HTMLInputElement).value;
+    if (val) img.src = val;
+  });
 }
 
-btnRefreshNote.addEventListener('click', fetchLoveNote);
+handleImageChange(inputImg1, img1);
+handleImageChange(inputImg2, img2);
+handleImageChange(inputImg3, img3);
+
+// --- Love Note Cycling (Offline/No API) ---
+function displayLoveNote() {
+  const note = LOVE_NOTES[currentNoteIndex];
+  noteHeader.textContent = note.header;
+  noteBody.textContent = `"${note.message}"`;
+  noteSig.textContent = note.signature;
+}
+
+btnRefreshNote.addEventListener('click', () => {
+  currentNoteIndex = (currentNoteIndex + 1) % LOVE_NOTES.length;
+  displayLoveNote();
+});
+
+// Initialize first note
+displayLoveNote();

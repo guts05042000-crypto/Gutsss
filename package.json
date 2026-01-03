@@ -1,5 +1,5 @@
 {
-  "name": "love-&-memories-anniversary",
+  "name": "simple-anniversary-wish",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -9,7 +9,6 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@google/genai": "^1.34.0",
     "react": "^19.2.3"
   },
   "devDependencies": {
